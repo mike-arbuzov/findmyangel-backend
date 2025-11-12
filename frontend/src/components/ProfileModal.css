@@ -1,0 +1,303 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+  overflow-y: auto;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: white;
+  border-radius: 0;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.3s ease-out;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  border: 1px solid #e0e0e0;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10;
+  color: #000000;
+}
+
+.modal-close:hover {
+  background: #000000;
+  color: #ffffff;
+}
+
+.modal-header {
+  padding: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.modal-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #000000;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.modal-title {
+  flex: 1;
+}
+
+.modal-title h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.8rem;
+  color: #333;
+}
+
+.modal-headline {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #666;
+}
+
+.modal-linkedin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #000000;
+  text-decoration: none;
+  font-weight: 400;
+  padding: 0.5rem 1rem;
+  border: 1px solid #000000;
+  border-radius: 0;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+}
+
+.modal-linkedin-link:hover {
+  background: #000000;
+  color: white;
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+.modal-section {
+  margin-bottom: 2rem;
+}
+
+.modal-section:last-child {
+  margin-bottom: 0;
+}
+
+.modal-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: #000000;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #000000;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-item strong {
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.info-item span {
+  color: #333;
+  font-size: 1rem;
+}
+
+.summary-section,
+.experience-section,
+.education-section,
+.sectors-section,
+.portfolio-section {
+  margin-top: 1.5rem;
+}
+
+.summary-section strong,
+.experience-section strong,
+.education-section strong,
+.sectors-section strong,
+.portfolio-section strong {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #666;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.summary-section p {
+  color: #555;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.experience-section ul,
+.education-section ul,
+.portfolio-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.experience-section li,
+.education-section li,
+.portfolio-section li {
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 0;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid #000000;
+}
+
+.exp-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.exp-company {
+  color: #000000;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.exp-duration {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.exp-description {
+  color: #555;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.edu-school {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.edu-degree {
+  color: #666;
+}
+
+.sectors-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sector-badge {
+  background: #f5f5f5;
+  color: #000000;
+  padding: 0.5rem 1rem;
+  border-radius: 0;
+  font-size: 0.9rem;
+  font-weight: 400;
+  border: 1px solid #e0e0e0;
+}
+
+.portfolio-section li {
+  color: #555;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.portfolio-section li::before {
+  content: '•';
+  position: absolute;
+  left: 0.5rem;
+  color: #000000;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .modal-title h2 {
+    font-size: 1.5rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
