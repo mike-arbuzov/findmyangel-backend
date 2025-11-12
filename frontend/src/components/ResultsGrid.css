@@ -15,8 +15,9 @@
 
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  max-width: 100%;
 }
 
 .loading-container {
@@ -66,13 +67,8 @@
 
 @media (min-width: 1200px) {
   .grid-container {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (min-width: 1600px) {
-  .grid-container {
     grid-template-columns: repeat(4, 1fr);
+    max-width: 100%;
   }
 }
 

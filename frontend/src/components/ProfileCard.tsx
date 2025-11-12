@@ -20,6 +20,13 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onClick }) => {
     return name.substring(0, 2).toUpperCase();
   };
 
+  const relevanceScore = profile.relevance_score ?? null;
+  const scorePercentage = relevanceScore !== null ? Math.round(relevanceScore) : null;
+  
+  // Calculate circumference for circular progress (radius = 16, so circumference ≈ 100.5)
+  const circumference = 2 * Math.PI * 16;
+  const strokeDashoffset = circumference - (scorePercentage !== null ? (scorePercentage / 100) * circumference : 0);
+
   return (
     <div className="profile-card" onClick={onClick}>
       <div className="card-header">
@@ -32,6 +39,35 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onClick }) => {
             <p className="headline">{personal.headline}</p>
           )}
         </div>
+        {scorePercentage !== null && (
+          <div className="relevance-indicator" title={`Relevance: ${scorePercentage}%`}>
+            <svg className="relevance-circle" viewBox="0 0 36 36">
+              <circle
+                className="relevance-circle-bg"
+                cx="18"
+                cy="18"
+                r="16"
+                fill="none"
+                stroke="#e0e0e0"
+                strokeWidth="2"
+              />
+              <circle
+                className="relevance-circle-fill"
+                cx="18"
+                cy="18"
+                r="16"
+                fill="none"
+                stroke="#000000"
+                strokeWidth="2"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                transform="rotate(-90 18 18)"
+              />
+            </svg>
+            <span className="relevance-score">{scorePercentage}%</span>
+          </div>
+        )}
       </div>
 
       <div className="card-body">
@@ -51,8 +87,10 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onClick }) => {
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
               <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
             </svg>
-            <span>{personal.current_role}</span>
-            {personal.company && <span className="company"> at {personal.company}</span>}
+            <span>
+              {personal.current_role}
+              {personal.company && <span className="company"> at {personal.company}</span>}
+            </span>
           </div>
         )}
 

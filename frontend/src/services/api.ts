@@ -3,7 +3,7 @@ import type { SearchRequest, SearchResponse } from '../types';
 
 export const searchProfiles = async (baseUrl: string, request: SearchRequest): Promise<SearchResponse> => {
   try {
-    const response = await axios.post<SearchResponse>(`${baseUrl}/search`, request, {
+    const response = await axios.post<SearchResponse>(`${baseUrl}/api/search`, request, {
       headers: {
         'Content-Type': 'application/json',
       },

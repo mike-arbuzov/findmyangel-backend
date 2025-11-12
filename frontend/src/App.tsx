@@ -59,7 +59,13 @@ function App() {
         filters: Object.keys(activeFilters).length > 0 ? (activeFilters as SearchFilters) : null
       });
 
-      setResults(response.results || []);
+      // Map relevance scores to profiles
+      const resultsWithScores = (response.results || []).map((profile, index) => ({
+        ...profile,
+        relevance_score: response.relevance_scores?.[index]
+      }));
+
+      setResults(resultsWithScores);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to search profiles');
       setResults([]);

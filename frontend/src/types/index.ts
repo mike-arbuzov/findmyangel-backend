@@ -40,6 +40,7 @@ export interface Profile {
   investment_profile: InvestmentProfile;
   extraction_status?: string;
   sources_used?: string[];
+  relevance_score?: number; // 0-100 relevance score from FAISS search
 }
 
 export interface SearchFilters {
@@ -60,5 +61,6 @@ export interface SearchResponse {
   results: Profile[];
   total_found: number;
   query: string;
+  relevance_scores?: number[]; // 0-100 relevance scores for each result
 }
 

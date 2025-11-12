@@ -10,15 +10,15 @@ Usage:
     4. Or: uvicorn search_server:app --reload
 
 API Endpoints:
-    - POST /search - Search with query, filters, and max_results
-    - GET /search/get - Same as POST but with query parameters
-    - GET /profiles - List all profiles with pagination
-    - GET /profiles/{id} - Get a specific profile by index
-    - GET /health - Health check
-    - GET / - Server info
+    - POST /api/search - Search with query, filters, and max_results
+    - GET /api/search/get - Same as POST but with query parameters
+    - GET /api/profiles - List all profiles with pagination
+    - GET /api/profiles/{id} - Get a specific profile by index
+    - GET /api/health - Health check
+    - GET /api/ - Server info
 
 Example search request:
-    POST /search
+    POST /api/search
     {
         "query": "Find investors interested in fintech",
         "max_results": 10,
@@ -93,6 +93,7 @@ class SearchResponse(BaseModel):
     results: List[Dict[str, Any]] = Field(..., description="Search results")
     total_found: int = Field(..., description="Total number of results found")
     query: str = Field(..., description="Original search query")
+    relevance_scores: Optional[List[float]] = Field(None, description="Relevance scores (0-100) for each result")
 
 
 def get_text_representation(profile: Dict[str, Any]) -> str:
@@ -257,6 +258,30 @@ def matches_filters(profile: Dict[str, Any], filters: Dict[str, Any]) -> bool:
                 return False
     
     return True
+
+
+def distance_to_relevance_score(distance: float, max_distance: float) -> float:
+    """
+    Convert FAISS L2 distance to a relevance score (0-100)
+    
+    Args:
+        distance: L2 distance from FAISS search
+        max_distance: Maximum distance in the result set (for normalization)
+        
+    Returns:
+        Relevance score from 0 to 100 (higher is more relevant)
+    """
+    if max_distance == 0:
+        return 100.0
+    
+    # Normalize distance to 0-1 range (inverted: lower distance = higher relevance)
+    normalized = 1.0 - (distance / max_distance)
+    
+    # Clamp to 0-1 range
+    normalized = max(0.0, min(1.0, normalized))
+    
+    # Convert to 0-100 scale
+    return normalized * 100.0
 
 
 def rerank_results(query: str, results: List[Dict[str, Any]], max_results: int) -> List[Dict[str, Any]]:
@@ -458,7 +483,7 @@ async def startup_event():
         print("Warning: Cannot create FAISS index without OpenAI API key")
 
 
-@app.get("/")
+@app.get("/api/")
 async def root():
     """Root endpoint"""
     return {
@@ -469,7 +494,7 @@ async def root():
     }
 
 
-@app.get("/health")
+@app.get("/api/health")
 async def health():
     """Health check endpoint"""
     return {
@@ -479,7 +504,7 @@ async def health():
     }
 
 
-@app.post("/search", response_model=SearchResponse)
+@app.post("/api/search", response_model=SearchResponse)
 async def search(request: SearchRequest):
     """
     Search for profiles using embedding-based search with filtering and reranking
@@ -507,32 +532,70 @@ async def search(request: SearchRequest):
         k = min(request.max_results * 3, faiss_index.ntotal)  # Get 3x results for filtering/reranking
         distances, indices = faiss_index.search(query_embedding, k)
         
-        # Get candidate profiles
-        candidate_profiles = [profiles[idx] for idx in indices[0] if 0 <= idx < len(profiles)]
+        # Get candidate profiles with their distances
+        # Use linkedin_url as unique identifier for mapping
+        candidate_data = [
+            {"profile": profiles[idx], "distance": float(distances[0][i])}
+            for i, idx in enumerate(indices[0])
+            if 0 <= idx < len(profiles)
+        ]
+        
+        # Create a mapping from profile identifier to distance
+        profile_distance_map = {}
+        for data in candidate_data:
+            profile = data["profile"]
+            profile_id = profile.get("linkedin_url") or profile.get("name", "")
+            profile_distance_map[profile_id] = data["distance"]
         
         # Apply filters
         if request.filters:
-            filtered_profiles = [
-                profile for profile in candidate_profiles
-                if matches_filters(profile, request.filters)
+            filtered_data = [
+                data for data in candidate_data
+                if matches_filters(data["profile"], request.filters)
             ]
         else:
-            filtered_profiles = candidate_profiles
+            filtered_data = candidate_data
+        
+        # Extract profiles for reranking
+        filtered_profiles = [data["profile"] for data in filtered_data]
         
         # Rerank results using GPT
         reranked_profiles = rerank_results(request.query, filtered_profiles, request.max_results)
         
+        # Map reranked profiles back to their original FAISS distances
+        reranked_distances = []
+        for profile in reranked_profiles:
+            profile_id = profile.get("linkedin_url") or profile.get("name", "")
+            distance = profile_distance_map.get(profile_id)
+            if distance is None:
+                # Fallback: use average distance if not found
+                distance = sum(d["distance"] for d in filtered_data) / len(filtered_data) if filtered_data else 1.0
+            reranked_distances.append(distance)
+        
+        # Calculate max distance for normalization (use all filtered distances, not just reranked)
+        all_distances = [d["distance"] for d in filtered_data]
+        max_distance = max(all_distances) if all_distances else 1.0
+        if max_distance == 0:
+            max_distance = 1.0
+        
+        # Convert distances to relevance scores (0-100)
+        relevance_scores = [
+            distance_to_relevance_score(dist, max_distance)
+            for dist in reranked_distances
+        ]
+        
         return SearchResponse(
             results=reranked_profiles,
             total_found=len(reranked_profiles),
-            query=request.query
+            query=request.query,
+            relevance_scores=relevance_scores
         )
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
 
 
-@app.get("/search/get", response_model=SearchResponse)
+@app.get("/api/search/get", response_model=SearchResponse)
 async def search_get(
     query: str = Query(..., description="Search query/prompt"),
     max_results: int = Query(10, ge=1, le=100, description="Maximum number of results"),
@@ -567,7 +630,7 @@ async def search_get(
     return await search(request)
 
 
-@app.get("/profiles/{profile_id}")
+@app.get("/api/profiles/{profile_id}")
 async def get_profile(profile_id: int):
     """
     Get a specific profile by index
@@ -587,7 +650,7 @@ async def get_profile(profile_id: int):
     return profiles[profile_id]
 
 
-@app.get("/profiles")
+@app.get("/api/profiles")
 async def list_profiles(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100)
