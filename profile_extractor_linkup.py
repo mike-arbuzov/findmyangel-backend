@@ -577,10 +577,9 @@ class ExtractedProfile(BaseModel):
         
         return members
     
-    def extract_profiles_batch(self, profiles: List[Dict], 
+    def extract_profiles_batch(self, profiles: List[Dict],
                                json_filename: str = 'angel_profiles_linkup.json',
-                               csv_filename: str = 'angel_profiles_linkup.csv',
-                               save_interval: int = 10) -> List[Dict]:
+                               csv_filename: str = 'angel_profiles_linkup.csv') -> List[Dict]:
         """
         Extract profiles for multiple business angels
         
@@ -588,7 +587,6 @@ class ExtractedProfile(BaseModel):
             profiles: List of dictionaries with 'name' and 'linkedin' keys
             json_filename: Filename for JSON output (default: 'angel_profiles_linkup.json')
             csv_filename: Filename for CSV output (default: 'angel_profiles_linkup.csv')
-            save_interval: Save results after every N profiles (default: 10)
             
         Returns:
             List of extracted profile dictionaries
@@ -613,13 +611,10 @@ class ExtractedProfile(BaseModel):
             
             print(f"\nProgress: {i}/{len(profiles)} profiles processed ({successful_extractions} extracted)")
             
-            # Save after every N successful extractions (or at the end)
-            if successful_extractions % save_interval == 0 or i == len(profiles):
-                print(f"\n{'='*60}")
-                print(f"Checkpoint: Saving {len(extracted_profiles)} profiles...")
-                print(f"{'='*60}")
-                self.save_profiles_json(json_filename)
-                self.save_profiles_csv(csv_filename)
+            # Save after each successful extraction
+            print(f"Saving {len(extracted_profiles)} profiles to files...")
+            self.save_profiles_json(json_filename)
+            self.save_profiles_csv(csv_filename)
             
             # Add delay between extractions to be respectful
             if i < len(profiles):
@@ -733,8 +728,7 @@ if __name__ == '__main__':
         profiles = extractor.extract_profiles_batch(
             members,
             json_filename=json_filename,
-            csv_filename=csv_filename,
-            save_interval=10
+            csv_filename=csv_filename
         )
         
         print(f"\n{'='*60}")
