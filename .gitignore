@@ -5,7 +5,7 @@ frontend/.env
 frontend/node_modules
 frontend/dist
 *.csv
-*.json
+*profiles*.json
 
 
 
