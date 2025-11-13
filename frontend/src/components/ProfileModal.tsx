@@ -20,6 +20,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ profile, onClose }) => {
     return name.substring(0, 2).toUpperCase();
   };
 
+  // Normalize LinkedIn URL (remove trailing slash)
+  const normalizedLinkedInUrl = profile.linkedin_url?.replace(/\/+$/, '') || '';
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -32,15 +35,31 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ profile, onClose }) => {
 
         <div className="modal-header">
           <div className="modal-avatar">
-            {getInitials(profile.name)}
+            {profile.avatar_url ? (
+              <img 
+                src={profile.avatar_url} 
+                alt={profile.name || 'Profile'} 
+                onError={(e) => {
+                  // Fallback to initials if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.textContent = getInitials(profile.name);
+                  }
+                }}
+              />
+            ) : (
+              getInitials(profile.name)
+            )}
           </div>
           <div className="modal-title">
             <h2>{profile.name || 'Unknown'}</h2>
             {personal.headline && <p className="modal-headline">{personal.headline}</p>}
           </div>
-          {profile.linkedin_url && (
+          {normalizedLinkedInUrl && (
             <a
-              href={profile.linkedin_url}
+              href={normalizedLinkedInUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="modal-linkedin-link"

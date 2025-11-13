@@ -36,6 +36,7 @@ export interface InvestmentProfile {
 export interface Profile {
   name: string;
   linkedin_url: string;
+  avatar_url?: string;
   personal_info: PersonalInfo;
   investment_profile: InvestmentProfile;
   extraction_status?: string;

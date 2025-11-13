@@ -181,7 +181,7 @@ class EstBANScraper:
             return None
     
     def extract_members_from_page(self, soup):
-        """Extract member names and LinkedIn URLs from a page"""
+        """Extract member names, LinkedIn URLs, and avatar images from a page"""
         members = []
         
         # Find all member items
@@ -189,7 +189,7 @@ class EstBANScraper:
         print("Found", len(member_items), "member items")
         
         for item in member_items:
-            member_data = {'name': None, 'linkedin': None}
+            member_data = {'name': None, 'linkedin': None, 'avatar_url': None}
             
             # Extract name
             name_div = item.find('div', class_='jet-listing-dynamic-field__content')
@@ -204,6 +204,31 @@ class EstBANScraper:
                 if 'linkedin.com' in href.lower():
                     member_data['linkedin'] = href
                     break
+            
+            # Extract avatar image URL
+            # Look for img tag within elementor-widget-container or first img in item
+            avatar_img = None
+            # First try to find image in elementor-widget-container
+            container = item.find('div', class_='elementor-widget-container')
+            if container:
+                avatar_img = container.find('img', src=True)
+            
+            # If not found, try first img in the member item
+            if not avatar_img:
+                avatar_img = item.find('img', src=True)
+            
+            if avatar_img:
+                src = avatar_img.get('src', '')
+                if src:
+                    # Convert relative URLs to absolute
+                    if src.startswith('//'):
+                        member_data['avatar_url'] = 'https:' + src
+                    elif src.startswith('/'):
+                        member_data['avatar_url'] = urljoin(self.base_url, src)
+                    elif src.startswith('http'):
+                        member_data['avatar_url'] = src
+                    else:
+                        member_data['avatar_url'] = urljoin(self.base_url, src)
             
             # Only add if we have at least a name
             if member_data['name']:
@@ -297,7 +322,7 @@ class EstBANScraper:
         """Save scraped data to CSV file"""
         import csv
         with open(filename, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=['name', 'linkedin'])
+            writer = csv.DictWriter(f, fieldnames=['name', 'linkedin', 'avatar_url'])
             writer.writeheader()
             writer.writerows(self.members)
         print(f"Data saved to {filename}")
@@ -317,11 +342,14 @@ def main():
         print("="*50)
         print(f"Total members: {len(members)}")
         members_with_linkedin = sum(1 for m in members if m['linkedin'])
+        members_with_avatar = sum(1 for m in members if m.get('avatar_url'))
         print(f"Members with LinkedIn: {members_with_linkedin}")
         print(f"Members without LinkedIn: {len(members) - members_with_linkedin}")
+        print(f"Members with Avatar: {members_with_avatar}")
+        print(f"Members without Avatar: {len(members) - members_with_avatar}")
         print("\nFirst 5 members:")
         for i, member in enumerate(members[:5], 1):
-            print(f"  {i}. {member['name']} - {member['linkedin'] or 'No LinkedIn'}")
+            print(f"  {i}. {member['name']} - {member['linkedin'] or 'No LinkedIn'} - {member.get('avatar_url') or 'No Avatar'}")
     else:
         print("No members found!")
 

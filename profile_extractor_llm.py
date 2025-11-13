@@ -63,6 +63,7 @@ class ExtractedProfile(BaseModel):
     """Complete extracted profile schema"""
     name: str = Field(..., description="Person's name")
     linkedin_url: str = Field(..., description="LinkedIn profile URL")
+    avatar_url: Optional[str] = Field(None, description="Avatar image URL")
     personal_info: PersonalInfo = Field(..., description="Personal information")
     investment_profile: InvestmentProfile = Field(..., description="Investment profile information")
     extraction_status: str = Field("success", description="Extraction status")
@@ -129,13 +130,14 @@ Use the web search results provided to gather information. If information is not
 
 Return the extracted information in the structured format provided."""
     
-    def extract_profile(self, name: str, linkedin_url: str) -> Dict:
+    def extract_profile(self, name: str, linkedin_url: str, avatar_url: str = None) -> Dict:
         """
         Extract complete profile data using LLM with web search
         
         Args:
             name: Name of the business angel
             linkedin_url: LinkedIn profile URL
+            avatar_url: Optional avatar image URL
             
         Returns:
             Dictionary containing personal and investment profile data
@@ -224,6 +226,7 @@ After gathering information through web search, return the extracted data in the
             return {
                 'name': name,
                 'linkedin_url': linkedin_url,
+                'avatar_url': avatar_url,
                 'personal_info': {},
                 'investment_profile': {},
                 'extraction_status': 'failed',
@@ -235,6 +238,7 @@ After gathering information through web search, return the extracted data in the
         profile_dict = extracted_profile.model_dump()
         profile_dict['linkedin_url'] = linkedin_url
         profile_dict['name'] = name
+        profile_dict['avatar_url'] = avatar_url
         profile_dict['sources_used'] = sources_used
         
         print("Profile extraction completed successfully!")
@@ -247,10 +251,10 @@ After gathering information through web search, return the extracted data in the
         Load members from a CSV file
         
         Args:
-            csv_file: Path to CSV file with 'name' and 'linkedin' columns
+            csv_file: Path to CSV file with 'name', 'linkedin', and optionally 'avatar_url' columns
             
         Returns:
-            List of dictionaries with 'name' and 'linkedin' keys
+            List of dictionaries with 'name', 'linkedin', and 'avatar_url' keys
         """
         members = []
         try:
@@ -259,7 +263,8 @@ After gathering information through web search, return the extracted data in the
                 for row in reader:
                     members.append({
                         'name': row.get('name', '').strip(),
-                        'linkedin': row.get('linkedin', '').strip()
+                        'linkedin': row.get('linkedin', '').strip(),
+                        'avatar_url': row.get('avatar_url', '').strip() or None
                     })
         except FileNotFoundError:
             print(f"Error: CSV file '{csv_file}' not found.")
@@ -290,12 +295,13 @@ After gathering information through web search, return the extracted data in the
         for i, profile in enumerate(profiles, 1):
             name = profile.get('name', 'Unknown')
             linkedin = profile.get('linkedin') or profile.get('linkedin_url')
+            avatar_url = profile.get('avatar_url')
             
             if not linkedin:
                 print(f"\nSkipping {name}: No LinkedIn URL provided")
                 continue
             
-            extracted = self.extract_profile(name, linkedin)
+            extracted = self.extract_profile(name, linkedin, avatar_url)
             extracted_profiles.append(extracted)
             successful_extractions += 1
             
@@ -352,6 +358,7 @@ After gathering information through web search, return the extracted data in the
             flat_profile = {
                 'name': profile.get('name', ''),
                 'linkedin_url': profile.get('linkedin_url', ''),
+                'avatar_url': profile.get('avatar_url', ''),
                 'headline': personal.get('headline', ''),
                 'location': personal.get('location', ''),
                 'current_role': personal.get('current_role', ''),
@@ -368,7 +375,7 @@ After gathering information through web search, return the extracted data in the
             flattened_profiles.append(flat_profile)
         
         fieldnames = [
-            'name', 'linkedin_url', 'headline', 'location', 'current_role', 'company',
+            'name', 'linkedin_url', 'avatar_url', 'headline', 'location', 'current_role', 'company',
             'is_investor', 'investment_role', 'portfolio_companies', 'sectors_of_interest',
             'investment_stage', 'investment_focus', 'extraction_status', 'sources_used'
         ]
@@ -381,8 +388,9 @@ After gathering information through web search, return the extracted data in the
         print(f"Profiles saved to {filename}")
 
 
-def extract_angel_profile_llm(name: str, linkedin_url: str, openai_api_key: Optional[str] = None,
-                               model: str = "gpt-5-mini", reasoning_effort: str = "low") -> Dict:
+def extract_angel_profile_llm(name: str, linkedin_url: str, avatar_url: str = None,
+                               openai_api_key: Optional[str] = None, model: str = "gpt-5-mini", 
+                               reasoning_effort: str = "low") -> Dict:
     """
     Convenience function to extract a single angel profile using LLM with GPT-5 thinking capabilities
     
@@ -401,7 +409,7 @@ def extract_angel_profile_llm(name: str, linkedin_url: str, openai_api_key: Opti
         model=model,
         reasoning_effort=reasoning_effort
     )
-    return extractor.extract_profile(name, linkedin_url)
+    return extractor.extract_profile(name, linkedin_url, avatar_url)
 
 
 if __name__ == '__main__':

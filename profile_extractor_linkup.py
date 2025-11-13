@@ -64,6 +64,7 @@ class ExtractedProfile(BaseModel):
     """Complete extracted profile schema"""
     name: str = Field(..., description="Person's name")
     linkedin_url: str = Field(..., description="LinkedIn profile URL")
+    avatar_url: Optional[str] = Field(None, description="Avatar image URL")
     personal_info: PersonalInfo = Field(..., description="Personal information")
     investment_profile: InvestmentProfile = Field(..., description="Investment profile information")
     extraction_status: str = Field("success", description="Extraction status")
@@ -394,13 +395,14 @@ class ExtractedProfile(BaseModel):
         }
         return json.dumps(schema)
     
-    def extract_profile(self, name: str, linkedin_url: str) -> Dict:
+    def extract_profile(self, name: str, linkedin_url: str, avatar_url: str = None) -> Dict:
         """
         Extract complete profile data using Linkup.so API
         
         Args:
             name: Name of the business angel
             linkedin_url: LinkedIn profile URL
+            avatar_url: Optional avatar image URL
             
         Returns:
             Dictionary containing personal and investment profile data
@@ -442,15 +444,16 @@ class ExtractedProfile(BaseModel):
                 response_data = response
             
             # Convert response to ExtractedProfile format
-            extracted_profile = self._parse_response(response_data, name, linkedin_url)
+            extracted_profile = self._parse_response(response_data, name, linkedin_url, avatar_url)
             
             # Add sources if available
             if isinstance(response_data, dict) and 'sources' in response_data:
                 sources_used = response_data.get('sources', [])
             
-            # Ensure linkedin_url and name are set
+            # Ensure linkedin_url, name, and avatar_url are set
             extracted_profile['linkedin_url'] = linkedin_url
             extracted_profile['name'] = name
+            extracted_profile['avatar_url'] = avatar_url
             extracted_profile['sources_used'] = sources_used
             
             print("Profile extraction completed successfully!")
@@ -463,6 +466,7 @@ class ExtractedProfile(BaseModel):
             return {
                 'name': name,
                 'linkedin_url': linkedin_url,
+                'avatar_url': avatar_url,
                 'personal_info': {},
                 'investment_profile': {},
                 'extraction_status': 'failed',
@@ -470,7 +474,7 @@ class ExtractedProfile(BaseModel):
                 'error': str(e)
             }
     
-    def _parse_response(self, response_data: Dict, name: str, linkedin_url: str) -> Dict:
+    def _parse_response(self, response_data: Dict, name: str, linkedin_url: str, avatar_url: str = None) -> Dict:
         """
         Parse Linkup API response into ExtractedProfile format
         
@@ -478,6 +482,7 @@ class ExtractedProfile(BaseModel):
             response_data: Response data from Linkup API
             name: Person's name
             linkedin_url: LinkedIn URL
+            avatar_url: Optional avatar image URL
             
         Returns:
             Dictionary in ExtractedProfile format
@@ -532,6 +537,7 @@ class ExtractedProfile(BaseModel):
             return {
                 'name': name,
                 'linkedin_url': linkedin_url,
+                'avatar_url': avatar_url,
                 'personal_info': personal_info,
                 'investment_profile': investment_profile,
                 'extraction_status': 'success',
@@ -542,6 +548,7 @@ class ExtractedProfile(BaseModel):
         return {
             'name': name,
             'linkedin_url': linkedin_url,
+            'avatar_url': avatar_url,
             'personal_info': {},
             'investment_profile': {},
             'extraction_status': 'partial',
@@ -554,10 +561,10 @@ class ExtractedProfile(BaseModel):
         Load members from a CSV file
         
         Args:
-            csv_file: Path to CSV file with 'name' and 'linkedin' columns
+            csv_file: Path to CSV file with 'name', 'linkedin', and optionally 'avatar_url' columns
             
         Returns:
-            List of dictionaries with 'name' and 'linkedin' keys
+            List of dictionaries with 'name', 'linkedin', and 'avatar_url' keys
         """
         members = []
         try:
@@ -566,7 +573,8 @@ class ExtractedProfile(BaseModel):
                 for row in reader:
                     members.append({
                         'name': row.get('name', '').strip(),
-                        'linkedin': row.get('linkedin', '').strip()
+                        'linkedin': row.get('linkedin', '').strip(),
+                        'avatar_url': row.get('avatar_url', '').strip() or None
                     })
         except FileNotFoundError:
             print(f"Error: CSV file '{csv_file}' not found.")
@@ -597,12 +605,13 @@ class ExtractedProfile(BaseModel):
         for i, profile in enumerate(profiles, 1):
             name = profile.get('name', 'Unknown')
             linkedin = profile.get('linkedin') or profile.get('linkedin_url')
+            avatar_url = profile.get('avatar_url')
             
             if not linkedin:
                 print(f"\nSkipping {name}: No LinkedIn URL provided")
                 continue
             
-            extracted = self.extract_profile(name, linkedin)
+            extracted = self.extract_profile(name, linkedin, avatar_url)
             extracted_profiles.append(extracted)
             successful_extractions += 1
             
@@ -659,6 +668,7 @@ class ExtractedProfile(BaseModel):
             flat_profile = {
                 'name': profile.get('name', ''),
                 'linkedin_url': profile.get('linkedin_url', ''),
+                'avatar_url': profile.get('avatar_url', ''),
                 'headline': personal.get('headline', ''),
                 'location': personal.get('location', ''),
                 'current_role': personal.get('current_role', ''),
@@ -675,7 +685,7 @@ class ExtractedProfile(BaseModel):
             flattened_profiles.append(flat_profile)
         
         fieldnames = [
-            'name', 'linkedin_url', 'headline', 'location', 'current_role', 'company',
+            'name', 'linkedin_url', 'avatar_url', 'headline', 'location', 'current_role', 'company',
             'is_investor', 'investment_role', 'portfolio_companies', 'sectors_of_interest',
             'investment_stage', 'investment_focus', 'extraction_status', 'sources_used'
         ]
@@ -688,8 +698,8 @@ class ExtractedProfile(BaseModel):
         print(f"Profiles saved to {filename}")
 
 
-def extract_angel_profile_linkup(name: str, linkedin_url: str, api_key: Optional[str] = None,
-                                 depth: str = "standard") -> Dict:
+def extract_angel_profile_linkup(name: str, linkedin_url: str, avatar_url: str = None,
+                                 api_key: Optional[str] = None, depth: str = "standard") -> Dict:
     """
     Convenience function to extract a single angel profile using Linkup.so API
     
@@ -703,7 +713,7 @@ def extract_angel_profile_linkup(name: str, linkedin_url: str, api_key: Optional
         Dictionary containing extracted profile data
     """
     extractor = LinkupProfileExtractor(api_key=api_key, depth=depth)
-    return extractor.extract_profile(name, linkedin_url)
+    return extractor.extract_profile(name, linkedin_url, avatar_url)
 
 
 if __name__ == '__main__':

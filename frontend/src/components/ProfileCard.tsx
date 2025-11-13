@@ -20,6 +20,9 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onClick }) => {
     return name.substring(0, 2).toUpperCase();
   };
 
+  // Normalize LinkedIn URL (remove trailing slash)
+  const normalizedLinkedInUrl = profile.linkedin_url?.replace(/\/+$/, '') || '';
+
   const relevanceScore = profile.relevance_score ?? null;
   const scorePercentage = relevanceScore !== null ? Math.round(relevanceScore) : null;
   
@@ -31,7 +34,23 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onClick }) => {
     <div className="profile-card" onClick={onClick}>
       <div className="card-header">
         <div className="avatar">
-          {getInitials(profile.name)}
+          {profile.avatar_url ? (
+            <img 
+              src={profile.avatar_url} 
+              alt={profile.name || 'Profile'} 
+              onError={(e) => {
+                // Fallback to initials if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  parent.textContent = getInitials(profile.name);
+                }
+              }}
+            />
+          ) : (
+            getInitials(profile.name)
+          )}
         </div>
         <div className="card-title">
           <h3>{profile.name || 'Unknown'}</h3>
@@ -117,10 +136,10 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile, onClick }) => {
         )}
       </div>
 
-      {profile.linkedin_url && (
+      {normalizedLinkedInUrl && (
         <div className="card-footer">
           <a
-            href={profile.linkedin_url}
+            href={normalizedLinkedInUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

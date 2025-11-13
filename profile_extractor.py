@@ -325,13 +325,14 @@ class ProfileExtractor:
         
         return investment_profile
     
-    def extract_profile(self, name: str, linkedin_url: str) -> Dict:
+    def extract_profile(self, name: str, linkedin_url: str, avatar_url: str = None) -> Dict:
         """
         Extract complete profile data (personal + investment) from LinkedIn
         
         Args:
             name: Name of the business angel
             linkedin_url: LinkedIn profile URL
+            avatar_url: Optional avatar image URL
             
         Returns:
             Dictionary containing personal and investment profile data
@@ -349,6 +350,7 @@ class ProfileExtractor:
             return {
                 'name': name,
                 'linkedin_url': linkedin_url,
+                'avatar_url': avatar_url,
                 'personal_info': {},
                 'investment_profile': {},
                 'extraction_status': 'failed'
@@ -364,6 +366,7 @@ class ProfileExtractor:
         profile = {
             'name': personal_info.get('name') or name,
             'linkedin_url': self.normalize_linkedin_url(linkedin_url),
+            'avatar_url': avatar_url,
             'personal_info': personal_info,
             'investment_profile': investment_profile,
             'extraction_status': 'success'
@@ -380,10 +383,10 @@ class ProfileExtractor:
         Load members from a CSV file
         
         Args:
-            csv_file: Path to CSV file with 'name' and 'linkedin' columns
+            csv_file: Path to CSV file with 'name', 'linkedin', and optionally 'avatar_url' columns
             
         Returns:
-            List of dictionaries with 'name' and 'linkedin' keys
+            List of dictionaries with 'name', 'linkedin', and 'avatar_url' keys
         """
         members = []
         try:
@@ -392,7 +395,8 @@ class ProfileExtractor:
                 for row in reader:
                     members.append({
                         'name': row.get('name', '').strip(),
-                        'linkedin': row.get('linkedin', '').strip()
+                        'linkedin': row.get('linkedin', '').strip(),
+                        'avatar_url': row.get('avatar_url', '').strip() or None
                     })
         except FileNotFoundError:
             print(f"Error: CSV file '{csv_file}' not found.")
@@ -408,7 +412,7 @@ class ProfileExtractor:
         Extract profiles for multiple business angels
         
         Args:
-            profiles: List of dictionaries with 'name' and 'linkedin' keys
+            profiles: List of dictionaries with 'name', 'linkedin', and optionally 'avatar_url' keys
             
         Returns:
             List of extracted profile dictionaries
@@ -418,12 +422,13 @@ class ProfileExtractor:
         for i, profile in enumerate(profiles, 1):
             name = profile.get('name', 'Unknown')
             linkedin = profile.get('linkedin') or profile.get('linkedin_url')
+            avatar_url = profile.get('avatar_url')
             
             if not linkedin:
                 print(f"\nSkipping {name}: No LinkedIn URL provided")
                 continue
             
-            extracted = self.extract_profile(name, linkedin)
+            extracted = self.extract_profile(name, linkedin, avatar_url)
             extracted_profiles.append(extracted)
             
             print(f"\nProgress: {i}/{len(profiles)} profiles extracted")
@@ -456,6 +461,7 @@ class ProfileExtractor:
             flat_profile = {
                 'name': profile.get('name', ''),
                 'linkedin_url': profile.get('linkedin_url', ''),
+                'avatar_url': profile.get('avatar_url', ''),
                 'headline': personal.get('headline', ''),
                 'location': personal.get('location', ''),
                 'current_role': personal.get('current_role', ''),
@@ -471,7 +477,7 @@ class ProfileExtractor:
             flattened_profiles.append(flat_profile)
         
         fieldnames = [
-            'name', 'linkedin_url', 'headline', 'location', 'current_role', 'company',
+            'name', 'linkedin_url', 'avatar_url', 'headline', 'location', 'current_role', 'company',
             'is_investor', 'investment_role', 'portfolio_companies', 'sectors_of_interest',
             'investment_stage', 'investment_focus', 'extraction_status'
         ]
@@ -484,17 +490,18 @@ class ProfileExtractor:
         print(f"Profiles saved to {filename}")
 
 
-def extract_angel_profile(name: str, linkedin_url: str) -> Dict:
+def extract_angel_profile(name: str, linkedin_url: str, avatar_url: str = None) -> Dict:
     """
     Convenience function to extract a single angel profile
     
     Args:
         name: Name of the business angel
         linkedin_url: LinkedIn profile URL
+        avatar_url: Optional avatar image URL
         
     Returns:
         Dictionary containing extracted profile data
     """
     extractor = ProfileExtractor()
-    return extractor.extract_profile(name, linkedin_url)
+    return extractor.extract_profile(name, linkedin_url, avatar_url)
 
